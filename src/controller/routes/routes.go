@@ -11,7 +11,7 @@ func InitRoutes() error {
 	{
 		userGroup.GET("/by_id/:id", user.FindUserById)
 		userGroup.GET("/by_email/:email", user.FindUserByEmail)
-		userGroup.POST("/")
+		userGroup.POST("/", user.CreateUser)
 		userGroup.PUT("/:id")
 		userGroup.DELETE("/:id")
 	}

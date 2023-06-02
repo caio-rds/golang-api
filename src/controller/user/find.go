@@ -16,5 +16,10 @@ func FindUserById(c *gin.Context) {
 }
 
 func FindUserByEmail(c *gin.Context) {
-
+	var user userModels.FindUserByEmailRequest
+	if err := c.ShouldBindUri(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"email": user.Email})
 }
