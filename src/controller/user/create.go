@@ -2,14 +2,24 @@ package user
 
 import (
 	"fmt"
+	"github.com/caio-rds/golang-api/src/configurations/rest_err"
 	"github.com/caio-rds/golang-api/src/configurations/validation"
-	"github.com/caio-rds/golang-api/src/model/requests/user"
-	userRes "github.com/caio-rds/golang-api/src/model/response/user"
+	"github.com/caio-rds/golang-api/src/database"
+	userReq "github.com/caio-rds/golang-api/src/model/user/requests"
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
-func CreateUser(c *gin.Context) {
-	var userPayload user.Request
+type Controller struct {
+	db *database.Db
+}
+
+func NewController(db *database.Db) *Controller {
+	return &Controller{db: db}
+}
+
+func (uc *Controller) CreateUser(c *gin.Context) {
+	var userPayload userReq.Request
 
 	if err := c.ShouldBindJSON(&userPayload); err != nil {
 		restErr := validation.ValidateError(err)
@@ -17,14 +27,14 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	var response = userRes.Response{
-		ID:    "1",
-		Email: userPayload.Email,
-		Name:  userPayload.Name,
-		Age:   userPayload.Age,
+	result, err := uc.db.NewDbUser(userPayload)
+	if err != nil {
+		valError := rest_err.NewBadRequestError(err.Error())
+		c.JSON(valError.Code, valError)
+		return
 	}
 
-	fmt.Println(response)
-	c.JSON(200, &response)
+	fmt.Println(result)
+	c.JSON(http.StatusOK, result)
 
 }

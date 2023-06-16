@@ -1,7 +1,8 @@
 package main
 
 import (
-	"github.com/caio-rds/golang-api/src/controller/routes"
+	"github.com/caio-rds/golang-api/src/database"
+	"github.com/caio-rds/golang-api/src/routes"
 	"github.com/joho/godotenv"
 	"log"
 )
@@ -14,7 +15,8 @@ func init() {
 }
 
 func main() {
-	if err := routes.InitRoutes(); err != nil {
+	db := database.NewDatabase()
+	if err := routes.InitRoutes(db); err != nil {
 		log.Fatal(err)
 	}
 }
