@@ -1,7 +1,6 @@
 package user
 
 import (
-	"fmt"
 	"github.com/caio-rds/golang-api/src/configurations/rest_err"
 	"github.com/caio-rds/golang-api/src/configurations/validation"
 	"github.com/caio-rds/golang-api/src/database"
@@ -34,7 +33,6 @@ func (uc *Controller) CreateUser(c *gin.Context) {
 		return
 	}
 
-	fmt.Println(result)
 	c.JSON(http.StatusOK, result)
 
 }

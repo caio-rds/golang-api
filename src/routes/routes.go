@@ -8,15 +8,14 @@ import (
 
 func InitRoutes(db *database.Db) error {
 	userController := user.NewController(db)
-	userFinder := user.NewUsernameFind(db)
 	r := gin.Default()
 	userGroup := r.Group("/user")
 	{
-		userGroup.GET("/:username", userFinder.FindByUsername)
-		userGroup.GET("/by_email/:email", user.FindUserByEmail)
+		userGroup.GET("/:username", userController.Username)
+		userGroup.GET("/by_email/:email", userController.Email)
 		userGroup.POST("/", userController.CreateUser)
-		userGroup.PUT("/:id")
-		userGroup.DELETE("/:id")
+		userGroup.PUT("/", userController.UpdateUser)
+		userGroup.DELETE("/:username", userController.DeleteUser)
 	}
 	if err := r.Run(); err != nil {
 		return err

@@ -36,32 +36,45 @@ func NewDatabase() *Db {
 	return &db
 }
 
-func (d *Db) NewDbUser(source requests.Request) (response.Response, error) {
+func (d *Db) NewDbUser(source requests.Request) (response.User, error) {
 
-	var search = requests.FindByUsernameRequest{
+	var searchUsername = requests.FindByUsername{
 		Username: source.Username,
 	}
 
-	result, err := d.GetUser(search)
+	resultUsername, err := d.GetUserByName(searchUsername)
 	if err != nil {
-		return response.Response{}, err
+		return response.User{}, err
 	}
 
-	if result != nil {
-		return response.Response{}, errors.New("username already exists")
+	if resultUsername != nil {
+		return response.User{}, errors.New("username already exists")
+	}
+
+	var searchEmail = requests.FindUserByEmail{
+		Email: source.Email,
+	}
+
+	resultEmail, err := d.GetUserByEmail(searchEmail)
+	if err != nil {
+		return response.User{}, err
+	}
+
+	if resultEmail != nil {
+		return response.User{}, errors.New("email already exists")
 	}
 
 	resultDB, err := d.clientDatabase.Collection("users").InsertOne(ctx, source)
 	if err != nil {
-		return response.Response{}, err
+		return response.User{}, err
 	}
 
 	var insertedId, ok = resultDB.InsertedID.(primitive.ObjectID)
 	if !ok {
-		return response.Response{}, errors.New("error on insert")
+		return response.User{}, errors.New("error on insert")
 	}
 
-	var resp = response.Response{
+	var resp = response.User{
 		ID:        insertedId,
 		Username:  source.Username,
 		Email:     source.Email,
@@ -72,7 +85,7 @@ func (d *Db) NewDbUser(source requests.Request) (response.Response, error) {
 	return resp, nil
 }
 
-func (d *Db) GetUser(source requests.FindByUsernameRequest) (*response.Response, error) {
+func (d *Db) GetUserByName(source requests.FindByUsername) (*response.User, error) {
 	src, err := bson.Marshal(source)
 	if err != nil {
 		return nil, err
@@ -82,7 +95,7 @@ func (d *Db) GetUser(source requests.FindByUsernameRequest) (*response.Response,
 	if err != nil {
 		return nil, err
 	}
-	var result response.Response
+	var result response.User
 	err = d.clientDatabase.Collection("users").FindOne(ctx, source).Decode(&result)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -93,18 +106,46 @@ func (d *Db) GetUser(source requests.FindByUsernameRequest) (*response.Response,
 	return &result, nil
 }
 
-//func InsertOne(source any) error {
-//	_, err := database.Collection(source.collection).InsertOne(ctx, source)
-//	if err != nil {
-//		return err
-//	}
-//	return nil
-//}
-//
-//func FindOne(source any) any {
-//	result := database.Collection(source.collection).FindOne(ctx, source)
-//	if result.Err() != nil {
-//		return result.Err()
-//	}
-//	return result
-//}
+func (d *Db) GetUserByEmail(source requests.FindUserByEmail) (*response.User, error) {
+	src, err := bson.Marshal(source)
+	if err != nil {
+		return nil, err
+	}
+	var filter bson.D
+	err = bson.Unmarshal(src, &filter)
+	if err != nil {
+		return nil, err
+	}
+	var result response.User
+	err = d.clientDatabase.Collection("users").FindOne(ctx, source).Decode(&result)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (d *Db) DeleteUser(source requests.FindByUsername) (*response.User, error) {
+	var result response.User
+	err := d.clientDatabase.Collection("users").FindOneAndDelete(ctx, source).Decode(&result)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &result, err
+}
+
+func (d *Db) EditUser(source requests.EditUser, filter requests.FindByUsername) (*response.User, error) {
+	update := bson.D{{"$set", source}}
+	_, err := d.clientDatabase.Collection("users").UpdateOne(ctx, filter, update)
+	if err != nil {
+		return nil, err
+	}
+
+	return d.GetUserByName(filter)
+}
